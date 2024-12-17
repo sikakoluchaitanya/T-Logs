@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { Icons } from "./icons";
 import { MainNav } from "./main-nav";
 import { SmallNav } from "./Small-nav";
+import { ModeToggle } from "./mode-toggle";
 
 export function Header() {
     return (
@@ -46,6 +47,7 @@ export function Header() {
                             <span className="sr-only">linkedin</span>
                             </div>
                         </Link>
+                        <ModeToggle/>
                         <SmallNav/>
                     </nav>
                 </div>
