@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 export function MainNav() {
     const pathname = usePathname()
     return (
-        <nav className="flex items-center space-x-4 lg:space-x-6">
+        <nav className="flex items-center space-x-4 lg:space-x-6 ml-2 mr-40">
             <Link href="/" className="mr-6 flex items-center space-x-2">
                 <Icons.logo className="h-10 w-10"/>
                 <span className="font-bold">{siteConfig.name}</span>
