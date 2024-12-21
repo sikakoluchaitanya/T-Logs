@@ -4,7 +4,7 @@ import { build } from 'velite'
 export default {
   // othor next config here...
   webpack: config => {
-    config.plugins.push(new VeliteWebpackPlugin())
+    config.plugins.push(new VeliteWebpackPlugin({ customOptions: 'value' }))
     return config
   }
 }
