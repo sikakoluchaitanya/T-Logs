@@ -1,0 +1,311 @@
+---
+title: Protocom
+description: docs for communication application using nestjs 
+date: 2024-12-22
+published: true
+---
+
+#### Learnings from Prisma
+
+ 
+chatroom  Chatroom @relation(fields: [chatroomId], references: [id], onDelete: Cascade)
+
+- **chatroom**: This defines a relation or link to a `Chatroom` model or table.
+- **Chatroom**: This is the name of the related model/table.
+- **@relation(fields: [chatroomId], references: [id], onDelete: Cascade)**:
+    - `fields: [chatroomId]`: The field in this model (likely the current one) that stores the foreign key linking to the `Chatroom` table. In this case, it's `chatroomId`.
+    - `references: [id]`: This specifies that the `chatroomId` field in this model corresponds to the `id` field in the `Chatroom` table.
+    - `onDelete: Cascade`: If a `Chatroom` is deleted, this ensures that any related records in this table will also be deleted (cascade deletion). 
+``` ts {2} showLineNumbers
+app.useGlobalPipes(
+  new ValidationPipe({
+    whitelist: true,
+    transform: true,
+    exceptionFactory: (errors) => {
+      const formattedErrors = errors.reduce((accumulator, error) => {
+        accumulator[error.property] = Object.values(error.constraints).join(', ');
+        return accumulator;
+      }, {});
+      return new BadRequestException(formattedErrors);
+    },
+  }),
+);
+
+```
+
+This sets up a **global validation pipe** for all incoming requests:
+
+- `whitelist: true`: Automatically strips any properties that are not explicitly defined in the DTO (Data Transfer Object).
+- `transform: true`: Automatically transforms payloads to the expected types (e.g., from string to number).
+- `exceptionFactory`: Customizes the format of validation errors. It collects all errors, formats them, and throws a `BadRequestException` with those formatted errors.
+
+### Guards and Graphql-auth.gaurd
+The `graphql-auth.guard.ts` file in a **NestJS** application typically contains a **Guard** for **authorization** and **authentication** of GraphQL requests. Guards in NestJS are used to control access to specific routes or resolver methods, and they can verify things like user roles or token validity before granting access to requested resources.
+
+In this case, `graphql-auth.guard.ts` is commonly used to verify the user's **authentication** status for GraphQL operations.
+
+### Purpose of `graphql-auth.guard.ts`
+
+1. **Authorization**: Ensures that only authorized users can access specific GraphQL queries or mutations.
+2. **Authentication**: Checks if the user is authenticated (e.g., if they have a valid JWT or session) before allowing them to proceed.
+
+### Typical Implementation of `graphql-auth.guard.ts`
+
+Here’s a simple example where this file would contain a **JWT-based** authentication guard for GraphQL:
+``` ts {3} showLineNumbers
+import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
+import { GqlExecutionContext } from '@nestjs/graphql';
+import { AuthService } from './auth.service';  // Example AuthService to verify token
+
+@Injectable()
+export class GqlAuthGuard implements CanActivate {
+  constructor(private readonly authService: AuthService) {}
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const ctx = GqlExecutionContext.create(context);
+    const { req } = ctx.getContext();
+
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return false;
+    }
+
+    const token = authHeader.split(' ')[1];
+    if (!token) {
+      return false;
+    }
+
+    // Validate token using AuthService
+    const isValid = await this.authService.validateToken(token);
+    return isValid;
+  }
+}
+
+```
+### Explanation of the Code
+
+1. **Imports**:
+    
+    - `CanActivate` and `ExecutionContext`: Part of NestJS’s core, these enable us to define the guard and access the execution context.
+    - `GqlExecutionContext`: Converts the GraphQL execution context to NestJS format, so we can access the request object for authentication data.
+    - `AuthService`: This service might contain the logic for validating tokens or checking user roles (for instance, by decoding a JWT).
+2. **Guard Class (`GqlAuthGuard`)**:
+    
+    - The `GqlAuthGuard` class implements the `CanActivate` interface, which requires a `canActivate` method to determine whether the request should proceed.
+    - `@Injectable()`: This decorator marks it as a provider that can be injected into other parts of the app.
+3. **canActivate Method**:
+    
+    - `GqlExecutionContext.create(context)`: Converts the standard execution context into a GraphQL context, enabling access to the `req` (request) object.
+    - **Authorization Check**:
+        - The guard checks for the `Authorization` header.
+        - If the token exists, it uses `AuthService.validateToken()` to verify the token’s validity.
+        - If `AuthService.validateToken(token)` returns `true`, the user is authenticated and can proceed. Otherwise, access is denied.
+
+### Applying the Guard to GraphQL Resolvers
+
+Once the guard is defined, you can apply it to individual resolvers or at the controller level:
+``` ts {4} showLineNumbers
+import { UseGuards } from '@nestjs/common';
+import { Resolver, Query } from '@nestjs/graphql';
+import { GqlAuthGuard } from './graphql-auth.guard';
+
+@Resolver()
+export class UserResolver {
+  @Query(() => User)
+  @UseGuards(GqlAuthGuard)
+  getUser() {
+    // This query will only execute if the guard allows access
+  }
+}
+```
+### Summary
+
+- `graphql-auth.guard.ts` is an authentication guard file for GraphQL, verifying if a request should be granted based on the user’s authorization or authentication status.
+- It checks for a valid token, typically a JWT, before allowing access to protected queries or mutations.
+- This guard helps secure your GraphQL API by ensuring only authorized users can access certain data or operations.
+
+#### Key Differences Between Guards and Middleware in NestJS
+
+1. **Purpose**:
+    
+    - **Guards** are specifically designed for **authorization and access control**. They decide if a request can proceed based on some condition (e.g., authentication, roles).
+    - **Middleware** is more general-purpose and can modify the request or response. Middleware often handles tasks like logging, body parsing, request transformation, or rate limiting.
+2. **Execution Context**:
+    
+    - **Guards** have access to the **execution context** (like `ExecutionContext` for HTTP and `GqlExecutionContext` for GraphQL), allowing them to determine if a request should proceed. They are tightly integrated with the lifecycle of a request.
+    - **Middleware** has access to the **request and response objects** directly but lacks the deeper context, like `ExecutionContext`, used in guards.
+3. **Execution Timing**:
+    
+    - **Middleware** is executed earlier in the request lifecycle, before guards, interceptors, or any controller logic.
+    - **Guards** are executed after middleware but before the route handler, making them ideal for access control based on request details or user status.
+4. **Application Scope**:
+    
+    - **Middleware** can be applied globally (for all routes) or to specific routes or modules.
+    - **Guards** can also be applied globally, at the controller level, or on individual routes (resolvers in the case of GraphQL).
+
+### Why Use Guards for GraphQL Authorization?
+
+In NestJS, **guards** are more suitable for **auth logic** than middleware, especially in GraphQL, because:
+
+- They provide deeper integration with the **GraphQL execution context** via `GqlExecutionContext`.
+- They can handle GraphQL-specific authorization tasks, like checking headers or user roles before a resolver method is called.
+- Middleware doesn’t have direct access to the GraphQL resolver context, making it less practical for authorization in GraphQL.
+
+### Summary
+
+In NestJS, **guards** act similarly to middleware for request validation but with additional capabilities and integration, making them better suited for **authorization** tasks in both REST and GraphQL APIs.
+
+### Resolver in GraphQl
+This `AuthResolver` class defines GraphQL mutations for **authentication** actions—registering, logging in, logging out, and refreshing tokens—using NestJS with GraphQL. Each mutation interacts with `AuthService` to manage authentication and leverages GraphQL decorators and types to structure and validate user input.
+
+#### Breakdown of `AuthResolver`
+
+#### 1. `@Resolver()`
+
+- Marks the class as a GraphQL resolver, allowing it to handle GraphQL operations.
+- Methods inside this class, marked with `@Mutation` or `@Query`, define the GraphQL operations available to clients.
+
+#### 2. Constructor: `constructor(private readonly authservice: AuthService)`
+
+- **Dependency injection** of `AuthService` into the `AuthResolver` class.
+- `AuthService` contains the core logic for handling authentication, while the resolver serves as the interface between the GraphQL API and `AuthService`.
+``` ts {5} showLineNumbers
+@Mutation(() => RegisterResponse)
+async register(
+    @Args('registerInput') registerDto: RegisterDto,
+    @Context() context: { res: Response }
+) {
+    // Validation: Check if passwords match
+    if (registerDto.password !== registerDto.confirmPassword) {
+        throw new BadRequestException({
+            confirmPassword: 'Password and confirm password are not the same.'
+        });
+    }
+    // Call AuthService to register the user
+    const { user } = await this.authservice.register(registerDto, context.res);
+    return { user };
+}
+```
+- **Purpose**: Handles user registration by accepting a `registerInput` of type `RegisterDto` and a `Context` containing the `Response` object.
+- **Validation**: Checks if `password` and `confirmPassword` match. If not, throws a `BadRequestException`.
+- **Registration**: Calls `AuthService.register` to register the user. The `Response` object is passed to set cookies or tokens, if necessary.
+- **Return**: Returns an instance of `RegisterResponse`, which includes the newly registered `user`.
+
+#### 4. `login` Mutation
+``` ts {6} showLineNumbers
+@Mutation(() => LoginResponse)
+async login(
+    @Args('loginInput') loginDto: LoginDto,
+    @Context() context: { res: Response }
+) {
+    return this.authservice.login(loginDto, context.res);
+}
+```
+- **Purpose**: Logs the user in with credentials from `loginInput` (typed as `LoginDto`).
+- **Execution**: Calls `AuthService.login`, passing in `loginDto` and the `Response` object to potentially set cookies or tokens.
+- **Return**: Returns a `LoginResponse` object containing the logged-in user.
+
+#### 5. `logout` Mutation
+- **Purpose**: Logs the user out by clearing session cookies or tokens using `AuthService.logout`.
+- **Execution**: Uses the `Response` object to manipulate headers or cookies.
+- **Return**: Returns a simple `String` message indicating success.
+- #### Summary of Decorators and Arguments
+
+- `@Mutation(() => Type)`: Defines each method as a mutation that returns a GraphQL type.
+- `@Args()`: Injects arguments from the GraphQL mutation input.
+- `@Context()`: Provides access to the `Request` and `Response` objects via `@Context`, allowing session management (like setting cookies or headers).
+
+#### Summary
+
+- This `AuthResolver` manages user authentication actions and delegates core logic to `AuthService`.
+- Each mutation interacts with the `Response` (and sometimes `Request`) object, enabling token management, setting cookies, and handling errors at the GraphQL resolver level.
+### Key Differences Between Resolvers and Controllers
+
+- **Resolvers** are specific to **GraphQL** in NestJS. They handle GraphQL queries and mutations, map GraphQL fields to methods in your application, and work with GraphQL-specific decorators like `@Query`, `@Mutation`, and `@Resolver`.
+    
+- **Controllers** are used in **REST** applications and map HTTP routes to handler methods using decorators like `@Get`, `@Post`, `@Put`, and `@Delete`.
+```ts {7} showLineNumbers
+import { Controller, Post, Body, Res, BadRequestException } from '@nestjs/common';
+import { AuthService } from './auth.service';
+import { LoginDto, RegisterDto } from './dto';
+import { Response } from 'express';
+
+@Controller('auth')
+export class AuthController {
+    constructor(private readonly authService: AuthService) {}
+
+    @Post('register')
+    async register(
+        @Body() registerDto: RegisterDto,
+        @Res() res: Response
+    ) {
+        if (registerDto.password !== registerDto.confirmPassword) {
+            throw new BadRequestException('Passwords do not match');
+        }
+        const user = await this.authService.register(registerDto, res);
+        return res.json({ user });
+    }
+
+    @Post('login')
+    async login(
+        @Body() loginDto: LoginDto,
+        @Res() res: Response
+    ) {
+        return this.authService.login(loginDto, res);
+    }
+}
+```
+
+#### Adding something to the predefined functions
+``` ts  {8} showLineNumbers
+declare namespace Express {
+    export interface Request {
+        user?: {
+                username: string;
+                sub:  number;
+        }
+    }
+}
+```
+
+The code you provided is a **TypeScript declaration merging** that extends the existing `Request` interface from the `Express` module. This is particularly useful when you're adding custom properties to the `Request` object, such as `user`, which might not be defined in the default types provided by Express.
+
+### Breakdown of the Code
+
+1. **`declare namespace Express`**:
+    
+    - This line starts the declaration of a new namespace that will extend the existing `Express` namespace.
+    - It tells TypeScript that you are modifying or adding to the types defined in the Express module.
+2. **`export interface Request`**:
+    
+    - Here, you’re extending the `Request` interface defined by Express.
+    - TypeScript allows you to add new properties to existing interfaces, which is known as declaration merging.
+3. **`user?: { username: string; sub: number; }`**:
+    
+    - This part defines a new optional property `user` on the `Request` interface.
+    - The `user` property is an object that has two fields:
+        - `username`: a string that represents the user's name.
+        - `sub`: a number (often representing the user's unique ID).
+
+### Purpose of This Declaration
+
+When using authentication middleware (like JWT-based authentication), the middleware often adds a `user` object to the request to keep track of the authenticated user’s information. However, TypeScript may not recognize this addition by default, resulting in type errors when trying to access `context.req.user`.
+
+By declaring the `user` property on the `Request` interface, you let TypeScript know that this property can exist, and you provide its shape (the expected structure), allowing you to access it without type errors.
+
+### Example Usage
+
+With this declaration in place, you can now safely access `context.req.user` in your application without TypeScript errors:
+``` ts {9} showLineNumbers
+@Mutation(() => SomeResponseType)
+@UseGuards(AuthGuard) // Assuming AuthGuard adds user to req
+async someMutation(@Context() context) {
+    const username = context.req.user?.username; // No TypeScript error here
+    const userID = context.req.user?.sub; // Accessing user ID safely
+    return this.someService.performAction(userID);
+}
+
+```
+
+### mantine
+[Mantine](https://mantine.dev/)

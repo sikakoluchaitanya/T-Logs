@@ -1,13 +1,15 @@
 import Image from "next/image";
 import * as runtime from "react/jsx-runtime";
+import { Callout } from "./callout";
 
 const useMDXComponent = (code: string) => {
     const fn = new Function(code);
     return fn({ ...runtime}).default;
 }
 
-const components = {
+const components = { // we can use this to add custom components to the blog page such as custom style to the page 
     Image,
+    Callout,
 }
 
 interface MdxProps {

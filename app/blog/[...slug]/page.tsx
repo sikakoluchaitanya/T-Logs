@@ -1,6 +1,7 @@
 import { posts } from "#site/content";
 import { MDXContent } from "@/components/mdx-component";
 import { notFound } from "next/navigation";
+import "@/styles/mdx.css";
 
 interface PostsPageProps {
     params: {
@@ -44,7 +45,7 @@ export default async function PostsPage({ params }: { params: PostsPageProps["pa
         notFound(); // Handle 404
     }
 
-    return (
+    return (// we can add the custom style to the blog post in mdx-component.tsx
         <article className="container py-6 prose dark:prose-invert max-w-3xl mx-auto">
             <h1 className="mb-2">{post.title}</h1>
             {post.description ? (
