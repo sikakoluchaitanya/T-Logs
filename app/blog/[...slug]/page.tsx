@@ -2,6 +2,8 @@ import { posts } from "#site/content";
 import { MDXContent } from "@/components/mdx-component";
 import { notFound } from "next/navigation";
 import "@/styles/mdx.css";
+import { Metadata } from "next";
+import { siteConfig } from "@/helper/site";
 
 interface PostsPageProps {
     params: {
@@ -12,22 +14,52 @@ interface PostsPageProps {
 async function getPostFromParams(paramsPromise: Promise<PostsPageProps["params"]>) {
     // Await the params if needed
     const params = await paramsPromise;
-
-    // console.log("Params received:", params);
-
     if (!params?.slug) {
         throw new Error("Params or slug is missing");
     }
-
     // Join the slug array into a string and decode URL-encoded characters
     const slug = decodeURIComponent(params.slug.join("/"));
-
-    // console.log("Decoded slug:", slug);
-
     // Find the post based on the slug
     const post = posts.find((post) => post.slugAsParams === slug);
-
     return post;
+}
+
+export async function generateMetadata({
+    params
+}: PostsPageProps): Promise<Metadata> {
+    const post = await getPostFromParams(Promise.resolve(params));
+    if (!post) {
+        return {}
+    }
+
+    const ogSearchParams = new URLSearchParams();
+    ogSearchParams.set("title", post.title);
+
+    return {
+        title: post.title,
+        description: post.description,
+        authors: { name: siteConfig.author },
+        openGraph: {
+            title: post.title,
+            description: post.description,
+            type: "article",
+            url: post.slug,
+            images: [
+                {
+                    url: `/api/OpenGraph?${ogSearchParams.toString()}`,
+                    width: 1200,
+                    height: 630,
+                    alt: post.title
+                }
+            ]
+        },
+        twitter: {
+            card: "summary_large_image",
+            title: post.title,
+            description: post.description,
+            images: [`/api/OpenGraph?${ogSearchParams.toString()}`]
+        }
+    }
 }
 
 export async function generateStaticParams(): Promise<PostsPageProps["params"][]> {

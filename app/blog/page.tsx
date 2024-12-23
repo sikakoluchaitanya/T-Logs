@@ -3,6 +3,10 @@ import { Posts_item } from "@/components/posts";
 import { QueryPagination } from "@/components/query-pagination";
 import { sortPosts } from "@/lib/utils";
 
+export const metadata = {
+    title: "Blog",
+    description: "Coming soon",
+}
 const POST_PER_PAGE = 5;
 
 interface PaginationProps {
