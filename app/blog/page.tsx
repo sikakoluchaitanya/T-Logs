@@ -1,11 +1,29 @@
 import { posts } from "#site/content";
 import { Posts_item } from "@/components/posts";
+import { QueryPagination } from "@/components/query-pagination";
 import { sortPosts } from "@/lib/utils";
 
+const POST_PER_PAGE = 5;
 
-export default async function Blog() {
+interface PaginationProps {
+    searchParams: {
+        page?: string
+    }
+}
+
+export default async function Blog({ searchParams }: PaginationProps) {
+    const resolvedSearchParams = await searchParams; // Resolve the promise
+    const pageParam = resolvedSearchParams?.page ? decodeURIComponent(resolvedSearchParams.page) : "1";
+    const currentPage = Number(pageParam) || 1;
+
+    // Your existing logic remains unchanged
     const sortedPosts = sortPosts(posts.filter(post => post.published === true));
-    const displayPosts = sortedPosts.slice(0, 10);
+    const totalPages = Math.ceil(sortedPosts.length / POST_PER_PAGE);
+    const displayPosts = sortedPosts.slice(
+        POST_PER_PAGE * (currentPage - 1),
+        POST_PER_PAGE * currentPage
+    );
+
     return (
         <div className="container max-w-4xl py-6 lg:py-10">
             <div className="flex flex-col items-start gap-4 md:flex-row md:justify-between md:gap-8">
@@ -26,10 +44,11 @@ export default async function Blog() {
                         return (    
                             <li key={slug}>
                                 <Posts_item 
-                                slug={slug} 
-                                title={title} 
-                                description={description ?? ""} 
-                                date={date} />
+                                    slug={slug} 
+                                    title={title} 
+                                    description={description ?? ""} 
+                                    date={date} 
+                                />
                             </li>
                         )
                     })}
@@ -37,6 +56,7 @@ export default async function Blog() {
             ) : (
                 <p>No posts found</p>
             )}
+            <QueryPagination totalPages={totalPages} className="justify-end mt-4"/>
         </div>
     );
 }

@@ -1,0 +1,634 @@
+---
+title: notes for mongodb aggregation pipeline
+description: detailed docs for the platform
+date: 2024-12-23
+published: true
+---
+
+an aggregation pipeline consist of one or more stages 
+// just come extra information regarding mongodb extension in vscode we can add data from the extension inside the vscode itself it is like mongodb compass inside the vscode 
+
+The aggregation pipeline in Mongodb is a framework that process documents in stages, transforming them and returning results.
+Stages: 
+the pipeline is made up of stages that perform operations on the document. these operations can include filtering, grouping and calculating values
+order: 
+the order of the stages is important, and the output from each stages is passed to the next.
+multiple stages: 
+the same stage can appear multiple times in the pipeline, except for the $out, $merge, and $geoNear stages 
+performance :
+optimizations can help the pipeline perform better for example putting a $match at the beginning of the pipeline can improve performance 
+aggregation pipeline builder :
+a graphical tool is available to help build and test aggregation pipeline
+
+#### aggregation using compass
+// i am  using compass for this 
+in the compass go the u r database and then in the collection and after selecting the  collection u will get the aggregation section where u have two option to select either stages or text 
+stages is the ui version where u can filter the data using the ui 
+just create a new stages by clicking on add stage then enter the variable on which u want to stage the data and the other is text 
+In text u have to write the variable in form of json data although it is not json but similar to it 
+
+such as i have the data of users and i want to fetch the the total number of the user active i want write this 
+``` Shell
+[
+  {
+    $match: {
+  		isActive: true,
+    },
+  },
+  {
+    $count: 'activeUsers'
+  }
+]
+```
+
+this query will give the output in the window next to it called as pipeline output 
+![[Pasted image 20240917135550.png]]![[Pasted image 20240917135559.png]]
+we can also convert the query in whichever language we want 
+such as in node 
+``` node 
+[
+  {
+    '$match': {
+      'isActive': true
+    }
+  }, {
+    '$count': 'activeUsers'
+  }
+]
+```
+![[Pasted image 20240917135822.png]]
+
+##### what is the average age of all the users??
+``` shell
+[
+  {
+    $group: {
+      _id: null,  # this will take all the objects available 
+      averageAge: {
+        $avg: "$age"
+      }
+    }
+  }
+]
+
+## output
+{
+  "_id": null,
+  "averageAge": 29.835
+}
+```
+
+``` shell
+[
+  {
+    $group: {
+      _id: "$gender", # this group the data on the bases of gender then avg the age in the data available
+      averageAge: {
+        $avg: "$age"
+      }
+    }
+  }
+]
+
+## output 
+{
+  "_id": "male",
+  "averageAge": 29.851926977687626
+}
+
+{
+  "_id": "female",
+  "averageAge": 29.81854043392505
+}
+# both of these are two different documents 
+```
+
+##### what is the top 5 most common favorite fruits among the users??
+to find this we first have to group the data on the basis of favorite fruit  and then count the number of documents on the basis of group formed and then sort then in the order we want and then we can also limit the number of documents to be sent 
+
+``` shell
+[
+  {
+    $group: {
+      _id: "$favoriteFruit", # groups the documents on the basis of favoritefruite just creates the sections 
+      count: {
+        $sum: 1 # this counts the number of fruits in each of the group of document section # and the logic behind writing 1 is whenever u find the document with the above id just add 1 to the sum and this runs on the group document 
+      }
+    }
+  },{ # after this we pass the data to second stage to sort 
+    $sort: {
+      count: -1 # this will sort the documents in the order for 1 it will set the order in ascending and for -1 it will set in desencding
+    }
+  },{ # third stage it will the access to the data above
+    $limit: 3 # this is used to limit the number of grouped documents u want 
+  }
+]
+
+## output 
+{
+  "_id": "banana",
+  "count": 339
+}
+{
+  "_id": "apple",
+  "count": 338
+}
+{
+  "_id": "strawberry",
+  "count": 323
+}
+```
+
+##### Find the total number of males and females
+``` shell
+[
+  {
+    $group: {  # this will group all the documents in two documents female and male 
+      _id: "$gender", 
+      gendercount: {
+        $sum: 1 # count of the each gender in there respective group 
+      }
+    }
+  }
+]
+
+## output 
+{
+  "_id": "male",
+  "gendercount": 493
+}
+{
+  "_id": "female",
+  "gendercount": 507
+}
+```
+
+##### Which country has the highest number of registered users?
+this is the data we are working on 
+``` json 
+{
+  "_id": {
+    "$oid": "66e937cf672f3de6a3a8995c"
+  },
+  "index": 0,
+  "name": "Aurelia Gonzales",
+  "isActive": false,
+  "registered": {
+    "$date": "2015-02-11T04:22:39.000Z"
+  },
+  "age": 20,
+  "gender": "female",
+  "eyeColor": "green",
+  "favoriteFruit": "banana",
+  "company": {
+    "title": "YURTURE",
+    "email": "aureliagonzales@yurture.com",
+    "phone": "+1 (940) 501-3963",
+    "location": {
+      "country": "USA",
+      "address": "694 Hewes Street"
+    }
+  },
+  "tags": [
+    "enim",
+    "id",
+    "velit",
+    "ad",
+    "consequat"
+  ]
+}
+```
+
+this one user in db we have multiple users so for now the issue is that location is inside a object location which is inside an object company so to get the value of country we have to drill down it 
+``` shell
+[
+  {
+    $group: {
+      _id: "$company.location.country", # this is how drilling is done just refrence it using dot similar to js
+      userCount: {
+        $sum: 1  # to get the  sum of total user in a group
+      }
+    }
+  },{  
+    $sort: {
+      userCount: -1 # sort it in the desencding order 
+    }
+  },{
+    $limit: 2 # limit it to top 2 countries 
+  }
+]
+
+## output
+{
+  "_id": "Germany",
+  "userCount": 261
+}
+{
+  "_id": "USA",
+  "userCount": 255
+}
+```
+
+##### List all unique eye colors present in the collection
+``` shell
+[
+  {
+    $group: {
+      _id: "$eyeColor", 
+    }
+  }
+]
+
+## output 
+{
+  "_id": "blue"
+}
+{
+  "_id": "brown"
+}
+{
+  "_id": "green"
+}
+```
+
+##### what is the average number of tags per user?
+one of doing it using unwind :
+what unwind does is let us suppose that we have a field in the data object which has the value in the form of array so when u unwind the user and let the us assume tags from the above object it has 5 values in the form of an array so the unwind will create 5 users with all the same values but each tags will consist of one value from the array 
+``` shell
+{
+  "_id": {
+    "$oid": "66e937cf672f3de6a3a89991"
+  },
+  "index": 53,
+  "name": "Cobb Wells",
+  "isActive": true,
+  "registered": {
+    "$date": "2016-08-12T07:51:53.000Z"
+  },
+  "age": 20,
+  "gender": "male",
+  "eyeColor": "blue",
+  "favoriteFruit": "banana",
+  "company": {
+    "title": "SLOGANAUT",
+    "email": "cobbwells@sloganaut.com",
+    "phone": "+1 (813) 511-3958",
+    "location": {
+      "country": "Germany",
+      "address": "258 Meeker Avenue"
+    }
+  },
+  "tags": "sit"
+}
+
+
+{
+  "_id": {
+    "$oid": "66e937cf672f3de6a3a89991"
+  },
+  "index": 53,
+  "name": "Cobb Wells",
+  "isActive": true,
+  "registered": {
+    "$date": "2016-08-12T07:51:53.000Z"
+  },
+  "age": 20,
+  "gender": "male",
+  "eyeColor": "blue",
+  "favoriteFruit": "banana",
+  "company": {
+    "title": "SLOGANAUT",
+    "email": "cobbwells@sloganaut.com",
+    "phone": "+1 (813) 511-3958",
+    "location": {
+      "country": "Germany",
+      "address": "258 Meeker Avenue"
+    }
+  },
+  "tags": "veniam"
+}
+
+{
+  "_id": {
+    "$oid": "66e937cf672f3de6a3a89991"
+  },
+  "index": 53,
+  "name": "Cobb Wells",
+  "isActive": true,
+  "registered": {
+    "$date": "2016-08-12T07:51:53.000Z"
+  },
+  "age": 20,
+  "gender": "male",
+  "eyeColor": "blue",
+  "favoriteFruit": "banana",
+  "company": {
+    "title": "SLOGANAUT",
+    "email": "cobbwells@sloganaut.com",
+    "phone": "+1 (813) 511-3958",
+    "location": {
+      "country": "Germany",
+      "address": "258 Meeker Avenue"
+    }
+  },
+  "tags": "laborum"
+}
+
+{
+  "_id": {
+    "$oid": "66e937cf672f3de6a3a89991"
+  },
+  "index": 53,
+  "name": "Cobb Wells",
+  "isActive": true,
+  "registered": {
+    "$date": "2016-08-12T07:51:53.000Z"
+  },
+  "age": 20,
+  "gender": "male",
+  "eyeColor": "blue",
+  "favoriteFruit": "banana",
+  "company": {
+    "title": "SLOGANAUT",
+    "email": "cobbwells@sloganaut.com",
+    "phone": "+1 (813) 511-3958",
+    "location": {
+      "country": "Germany",
+      "address": "258 Meeker Avenue"
+    }
+  },
+  "tags": "exercitation"
+}
+```
+
+now we can perform the task using this 
+``` shell
+[
+  {
+    $unwind: "$tags" # creates multiple of same object
+  },
+  {
+    $group:{
+      _id: "$_id", # this will group all the data by ids of all the users
+      numberOfTags: {
+        $sum: 1  # this will count all the ids and cause we have multiple objects of the same  user this will sum and give the count of all the tags per id have or per user have
+      }
+    }
+  },
+  {
+    $group: {
+      _id: null, # this will group all the user 
+      averageNumberOfTags: {
+        $avg: "$numberOfTags" # avg of the number of tags per user have
+      }
+    }
+  }
+]
+```
+
+this is can also we done using another way 
+we can use addfields which is can used to add a new field to the user 
+``` shell
+[
+  {
+    $addFields: { # this will add a new field to the database
+      numberofTags: { # the new field
+        $size: { $ifNull : ["$tags", []]} # this will check that the tags field is not null in any of the users object if null then take the data as empty string 
+      }
+    }
+  },
+  {
+    $group:{ # group the data with new field size in it which will have number of tags in the each of the user data 
+      _id: null, # group all the data by null 
+      averageNumberOfTags: { # avg of number of tags in each objects
+        $avg: "$numberofTags"
+      }
+    }
+  }
+]
+```
+
+##### how many users have 'enim' as one of their tags?
+the issue which we are trying to solve is with when the data is inside an object within an object so we have to drill trough multiple objects inside and object to get the data 
+``` shell 
+[
+  {
+    $match: {  # match just matches the tags directly in the database and returns the document 
+  		tags: "id"
+    }
+  }, {
+    $count: 'userWithEnimTag' # counting all the documents given by match 
+  }
+]
+```
+
+#### What are the names and age of users who are inactive and have 'velit' as a tag?
+``` shell 
+[
+  {
+    $match: { # inside the match we can directly sent the fields which we want to filter so we want to filter the db on the bases of these two fields
+  		isActive: false, 
+	    tags: "velit"
+    }
+  }, {
+    $project: { # after getting all the filtered documents on the bases of above fields we will get the whole documents but we dont want that we just want two fields name and age so we can do that using project 
+      name: 1,
+      age: 1
+    }
+  }
+]
+```
+
+##### How many users have a phone number starting with '+1(940)'?
+``` shell
+[
+  {
+    $match: {
+  		"company.phone": /^\+1 \(940\)/,  # using regex to match all the numbers 
+    }
+  }, 
+  {
+    $count: 'userswithSpecialPhoneNumber' 
+  }
+]
+```
+
+##### Who has registered the most recently?
+``` shell
+[
+  {
+    $sort: { # this sorts the all the data in the database
+      registered: -1 # the database is sorted on the basis of registered parameter
+    }
+  }, 
+  {
+    $limit: 4 # limit the number of data objects to 4  
+  },
+  {
+    $project: { # then return only the following data
+      name: 1,
+      registered: 1,
+      favoriteFruit: 1
+    }
+  }
+]
+```
+
+##### Categorize users by their favorite  fruit
+
+``` shell
+[
+	{
+	  $group: {
+	    _id: "$favoriteFruit",
+	    users: {
+	      $push: "$name" #just pushes the documents with name in an array
+	    }
+	  }
+	}
+]
+
+## output 
+{
+  "_id": "banana",
+  "users": [
+    "Cobb Wells",
+    "Alison Farmer",
+    "Aurelia Gonzales",
+    "Sharon Grimes",
+    "Mable Pratt",
+    "Franco Ochoa",
+ ]
+}
+```
+
+##### How many users have 'ad' as the second tag in their list of tags?
+``` shell
+[
+  {
+    $match: {
+      "tags.1":"ad" # as tags is an array we directly query it position and check 
+    },
+  },
+  {
+    $count: 'secondTagAd'
+  }
+]
+```
+
+##### find users who have both 'enim' and 'id' in it
+``` shell
+[
+  {
+    $match: {
+      tags:{$all: ["enim", "id"]}
+    },
+  }
+]
+```
+
+##### find all the company with country as usa
+``` shell 
+[
+  {
+    $match: {
+		"company.location.country": "USA"
+    },
+  },
+  {
+    $group: {
+      _id: "$company.title",
+      userCount: {
+        $sum: 1,
+      },
+    }
+  }
+]
+```
+
+##### Lookup in mongodb 
+lookup is basically just left join two or more database such as in this we have books and  authors two database now if we want to join then we have to use local and foreign keys as we know that author_id in the books database is local key and _id in the author database is foreign key 
+``` shell
+[
+  {
+    $lookup: {
+      from: "authors",
+      localField: "author_id",
+      foreignField: "_id",
+      as: "authors_details"
+    }
+  },
+]
+
+## 
+{
+  "_id": 2,
+  "title": "Nineteen Eighty-Four",
+  "author_id": 101,
+  "genre": "Dystopian",
+  "authors_details": [
+    {
+      "_id": 101,
+      "name": "George Orwell",
+      "birth_year": 1903
+    }
+  ],
+  "author_details": null
+}
+```
+
+now the issue with above data is that the author details is storing an object inside a array which is ideal sometimes so can remove the object from the array 
+``` shell
+[
+  {
+    $lookup: {
+      from: "authors",
+      localField: "author_id",
+      foreignField: "_id",
+      as: "author_details"
+    }
+  },
+  {
+    $addFields: {
+      author_details: {
+        $first: "$author_details" # this just get the first object in array and puts it out of the array 
+        
+      }
+    }
+  }
+]
+## output 
+
+{
+  "_id": 2,
+  "title": "Nineteen Eighty-Four",
+  "author_id": 101,
+  "genre": "Dystopian",
+  "author_details": {
+    "_id": 101,
+    "name": "George Orwell",
+    "birth_year": 1903
+  }
+}
+```
+
+``` shell 
+## this is a better approch of getting the object from the array 
+[
+  {
+    $lookup: {
+      from: "authors",
+      localField: "author_id",
+      foreignField: "_id",
+      as: "author_details"
+    }
+  },
+  {
+    $addFields: {
+      author_details: {
+        $arrayElemAt: ["$author_details", 0] # this gets the first element in the array just looks more cleaner than the previous one 
+      }
+    }
+  }
+]
+```

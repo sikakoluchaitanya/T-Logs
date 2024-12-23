@@ -1,0 +1,96 @@
+---
+title: docs for flowboard platform 
+description: detailed docs for the platform
+date: 2024-12-23
+published: true
+---
+
+-> I have choose convex as the whole baas as the database and also for backend
+
+#### Auth using convex and clerk 
+
+-> first have to start the project setting up the convex which is available at convex/ nextjs docs 
+```
+npm install convex
+```
+the above line will create a folder for covex which will have your backend and database code and then 
+```
+npx convex dev
+```
+which will run the code as a different server 
+and then just follow the way convex has mentioned in there docs as they provide there own library with clerk 
+https://docs.convex.dev/auth/clerk
+
+we just have to generate a jwt template from the clerk website and then setup a auth.config.js file in the convex folder and replace the provided the url in the jwt token with the auth.js file and after that just create a provider for the auth 
+
+and also we have to make middleware file to protect the public access to the project 
+
+``` ts  middleware.ts
+import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
+
+const isPublicRoute = createRouteMatcher(['/sign-in(.*)', '/sign-up(.*)'];
+  
+export default clerkMiddleware(async (auth, request) => {
+  if (!isPublicRoute(request)) {
+    await auth.protect()
+  }
+})
+export const config = {
+  matcher: [
+    // Skip Next.js internals and all static files, unless found in search params
+    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
+    // Always run for API routes
+    '/(api|trpc)(.*)',
+  ],
+}
+```
+
+the file step to setup convex-clerk auth is to create a provider file for that 
+just create a provider folder in the root of the project and then create a file with the provider 
+( providers/convex-clerk-provider.tsx )
+``` ts 
+"use client";
+import { ClerkProvider, useAuth } from "@clerk/nextjs";
+import { ConvexProviderWithClerk } from "convex/react-clerk";
+import { AuthLoading, Authenticated, ConvexReactClient } from "convex/react";
+
+interface ConvexClientProviderProps {
+  children: React.ReactNode;
+}
+
+const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL!;
+
+const convex = new ConvexReactClient(convexUrl);
+
+export const ConvexClientProvider = ({
+  children,
+}: ConvexClientProviderProps) => {
+  return (
+    <ClerkProvider>
+      <ConvexProviderWithClerk useAuth={useAuth} client={convex}>
+        {children}
+      </ConvexProviderWithClerk>
+    </ClerkProvider>
+  );
+};
+
+``` 
+
+``` ts
+                <Footer
+
+                    isFavorite={isFavorite}
+
+                    title={title}
+
+                    authorLabel={authorLabel}
+
+                    createdAtLabel={createdAtLabel}
+
+                    // onClick={{} => {}}
+
+                    disabled={false}
+
+                />
+
+```

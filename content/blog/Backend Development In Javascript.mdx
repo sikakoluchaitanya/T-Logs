@@ -1,0 +1,454 @@
+---
+title: notes for backend development 
+description: detailed docs for the platform
+date: 2024-12-23
+published: true
+---
+
+### Mongoose 
+
+-> used to build schema for the database and it is a odm(object data model)
+``` js
+// basic syntex used in the mongoose is 
+
+import mongoose from "mongoose"
+
+const userSchema = new mongoose.Schema()
+
+export const User = mongoose.model("user", userSchema)
+
+// this three line of the code is the base code in mongoose 
+// userSchema is use to make make the schema of the database and 
+// User is making the model using our schema in the database 
+// name os the model is user 
+```
+
+==IN mongoose when we define our model name as we did in the previous example such as 'user' then whatever name we give to the variable it just changes to plural form of it such as 'user' will be saved as "users" in the database and also in the small case such as if we would have give the name as 'USER' then it will save as "users" in the database ==
+
+-> Schema in Mongoose 
+``` js 
+const userSchema = new mongoose.Schema(
+{
+	username:{
+		type:String,
+		required: true,
+		unique: true,
+		lowercase: true
+	},
+	email:{
+		type: String,
+		required: true,
+		unique: true,
+		lowercase: true	
+	},
+	password:{
+		type: String,
+		required:true	
+	},
+	createdBy: {
+		type: mongoose.Schema.Types.ObjectId,
+		ref:"User"
+		// these two lines in the above are used to pass a refrence of another database schema to this object and this is the way to give the reference
+	}
+}, {timestamps: true} // second obect along with out schema for recording the time at which it was recorded
+)
+```
+
+##### photos  are not stores in the database and usually stored in the thirdparty servers such as aws s3 bucket cause it is not good for the database to store photos in the db itself we just store the url of the photo given by the s3 bucket in the database
+
+
+#### A better way of connecting to the database 
+
+1) first approach to write it in this way in the main index file
+``` js 
+import mongoose from "mongoose";
+import { DB_NAME } from "./constants";
+
+import express from "express"
+const app = express();
+
+// iffe 
+// in the production code iffe is started with a semicolon to avoid any missing semicolon before the line such as 
+
+// ;()() in the produnction code 
+// iffi is used to immediate run of the function without calling 
+
+( async () => {
+    try{
+        mongoose.connect(`${process.env.MONGODB_URI}/${DB_NAME}`)
+        app.on("error", (error) => {
+            console.log("ERR:", error);
+            throw error
+        })
+  // app offers many functions to use such as listen which is use to for the server and also .om function which is used for checking on the error 
+        app.listen(process.env.PORT, () => {
+        console.log(`Server running on port ${process.env.PORT}`)
+        })
+    } catch (error){
+        console.error("ERROR:", error)
+        throw err
+    }
+})()
+
+```
+
+2) or we can make a index file in the db folder and export the connection variable from there 
+``` js 
+import mongoose, { Connection } from "mongoose";
+import { DB_NAME } from "../constants";
+
+const connectDB = async () => {
+    try {
+	      const ConnectionInstance = await   mongoose.connect(`${process.env.MONGODB_URI}/${DB_NAME}`);
+        console.log(`\n MONGODB connected !! DB HOST : ${ConnectionInstance.Connection.host}`);
+    } catch (error) {
+        console.log("MONGODB connection error:", error);
+        process.exit(1);
+    }
+};
+
+export default connectDB
+```
+
+this is a better approach to follow 
+
+==Whenever a async function is completed it returns a promise==
+
+#### Dotenv
+-> this is used to import the env file which should be loaded first as we need to pass the env variables to all the files in the codebase and this can be done using there default option which is 
+
+``` js 
+require('dotenv').config() // this is the way it is there in there website but this is not relly used beacue of old way of importing 
+
+// better approch is to use import
+// but as we know that import is not yet added to the dotenv so we have to write some costome code for it 
+
+import dotenv from "dotenv"
+
+dotenv.config({
+	path: './env'
+})
+
+// and after this we have to make some change in the package.json file 
+  "scripts": {
+    "dev": "nodemon -r dotenv/config --experimental-json-modules src/index.js"
+  }
+
+```
+
+#### Issue I faced while setting up this 
+-> as i generated the password from a password manager it generated the password with some special character which is not allowed full explanation below: 
+
+```
+### Issues with the current connection string:
+
+- The special characters (`*`, `@`, `.`) in your password are problematic in the URL. These characters have special meanings in a URI and must be properly URL-encoded.
+    
+    - For example, `@` should be encoded as `%40`, `*` as `%2A`, and `.` should remain as `.` unless it's part of a special pattern.
+
+### Solution:
+
+You need to encode your password properly before inserting it into the connection string.
+
+### Example:
+
+Suppose your actual password is `p*m@.F98jrG@LNn`, you'll need to encode it like this:
+
+1. `*` becomes `%2A`
+2. `@` becomes `%40`
+
+So the password `p*m@.F98jrG@LNn` would become `p%2Am%40.F98jrG%40LNn`.
+```
+
+==Whenever we want to use a middleware we have to use "app.use"==
+
+#### Middleware
+![[Pasted image 20240913191559.png]]
+
+some of the middleware which is there inside the express are 
+``` js 
+app.use(express.json({limit: "20kb"}));
+app.use(express.urlencoded({extended: true, limit: "20kb"}));
+app.use(express.static("public"));
+app.use(cookieParser());
+
+// these are some of the middleware provided by the express itself such as express.json is used to check and limit the amount of json data allowed to send to the backend express.urlencoded is used to check the url and also 
+```
+-> one of the middleware provided by the mongoose is "pre" it is a middleware is used when u want to perform some task before saving the data in the database such as in the case of passwords before saving the passwords in the database we have to hash the password and then save it for the safety of the data
+``` js 
+// example of how to encrypt the data before saving it in the database by using a middleware in between 
+// here we have use function and not a arrow function because arrow function do not have access to this that is they do not have current context do we use function instead which do have the current context 
+// next is pre-defined in the middleware that we have to take and then pass after the process so that next process takes over 
+
+userSchema.pre("save", async function(next){
+    if(!this.isModified("password")) return next();
+    this.password = bcrypt.hash(this.password, 10)
+    next()
+})
+
+// mongoose also gives us option to make our own method ref to the model such as 
+userSchema.methods.isPasswordCorrect = async function(password){
+    return await bcrypt.compare(password, this.password)
+}
+// this is model we have used to check wheather the stored password and the encrypted password is same or not 
+```
+#### Code reusability 
+-> we can make a different file which will have function code which we use again and again such as async handler or error handler code 
+
+#### packages and libraries 
+
+1) mongoose paginate plugin for advance aggregate pipeline in mongodb 
+2) bcryptjs - used for hashing passwords [[Password encryption in Nodejs]]
+3) jwt(jsonwebtoken) [[JWT Token and JWT Sessions]]
+4) multer - file upload utility [[Multer code structure]]
+
+-> using cloudinary for upload of files and documents on there cloud and showing it in our website 
+
+#### Http (hyper text transfer protocol)
+URI- uniform resource identifier 
+URL- uniform resource locator 
+URN - uniform resource name 
+![[Pasted image 20240915112255.png]]
+![[Pasted image 20240915112550.png]]
+![[Pasted image 20240915112643.png]]![[Pasted image 20240915122126.png]]
+
+#### authentication and validation using token 
+
+``` js 
+
+// code for generating the tokens of access and refresh 
+const generateAccessAndRefreshTokens = async (userId) => {
+  try {
+    const user = await User.findById(userId);
+    const accessToken = user.generateAccessToken();
+    const refreshToken = user.generateRefreshToken();
+
+    user.refreshToken = refreshToken;
+    await user.save({ validateBeforeSave: false });
+
+    return { accessToken, refreshToken };
+  } catch (error) {
+    throw new ApiError(
+      500,
+      "Something went wrong while generating access and refresh token",
+    );
+  }
+};
+
+
+// after registeration of the user 
+const registerUser = asyncHandler(async (req, res) => {
+    const { fullName, email, username, password } = req.body;
+    if(!fullName || !email || !username || !password){
+        throw new ApiError(400,"All fields are required")
+    }
+
+    const existedUser = await User.findOne({
+        $or: [
+            { username },
+            { email }
+        ]
+    })
+
+    if(existedUser){
+       throw new ApiError(409 , "User already exists")
+    }
+  
+    const avatarLocalPath = req.files?.avatar[0]?.path;
+    // const coverImageLocalPath = req.files?.coverImage[0]?.path;
+    let coverImageLocalPath;
+    if(req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0){
+        coverImageLocalPath = req.files.coverImage[0].path
+    }
+  
+    if (!avatarLocalPath) {
+        throw new ApiError(400,"Avatar is required")
+    }
+  
+    const avatar = await uploadOnCloudinary(avatarLocalPath)
+    const coverImage = await uploadOnCloudinary(coverImageLocalPath)
+    
+    if(!avatar){
+        throw new ApiError(400, "avatar file required")
+    }
+  
+    const user = await User.create({
+        fullName,
+        avatar: avatar.url,
+        coverImage: coverImage?.url || "",
+        email,
+        username: username.toLowerCase(),
+        password
+    })
+  
+    const createdUser = await User.findOne({ _id: user._id }).select("-password -refreshToken");
+  
+    if (!createdUser) {
+        throw new ApiError(500, "User not created")
+    }
+  
+    return res.status(201).json(new ApiResponse(201, createdUser, "User created successfully"))
+})
+
+// then comes the login code 
+// and in the login code we genrate access and refresh token and save refresh access token in the database so that access token can be generate again using refresh token 
+
+const loginUser = asyncHandler(async (req, res) => {
+  // req body -> data
+  // username or email
+  // find the user
+  // check for password
+  // access and refresh token
+  // send cookie
+
+  const { username, password, email } = req.body;
+
+  if (!username && !email) {
+    throw new ApiError(400, "username or email is required");
+  }
+
+  const user = await User.findOne({
+    $or: [{ username }, { email }],
+  });
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  const isPasswordValid = await user.isPasswordCorrect(password);
+
+  if (!isPasswordValid) {
+    throw new ApiError(400, "Invalid credentials");
+  }
+
+  const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
+    user._id,
+  );
+
+  const loggedInUser = await User.findOne({ _id: user._id }).select(
+    "-password -refreshToken",
+  ); // we are calling it again cause the previous reference of user does not have refresh token in it
+
+  const options = {
+    httpOnly: true,
+    secure: true,
+  };
+
+  return res
+    .status(200)
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", refreshToken, options)
+    .json(
+      new ApiResponse(
+        200,
+        {
+          user: loggedInUser, // we are sending this data although we have saved it in the cookie cause there maybe some cases where the user want to set the cookies manually
+          // or maybe he is making a mobile app where cookies do not get set
+          accessToken,
+          refreshToken,
+        },
+        "User logged in successfully",
+      ),
+    );
+});
+
+```
+
+now the question come is that how can be logout the user once login one way is again finding by the user id and then finding it in the database but it is not good idea cause user will get access to password which is not need 
+-> one better way of doing it to insert a middleware in between to verify the tokens and then returning the user with need information which is a safer option of doing the logout verification 
+``` js
+export const verifyJWT = asyncHandler(async (req, _, next) => {
+// in this case the res in not been used so we can replace res with _ this is the part the industrial level code just a good practice to be followed 
+  try {
+    const token =
+      req.cookies?.accessToken ||
+      req.header("Authorization").replace("Bearer ", "");
+    // we can access cookies from req cause we have given cookies to middleware app.use(cookieParser());
+    if (!token) {
+      throw new ApiError(401, "Unauthorized request");
+    }
+
+    const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+
+    const user = await User.findById(decodedToken?._id).select(
+      "-password -refreshToken",
+    );
+
+    if (!user) {
+      throw new ApiError(401, "Invalid Access token");
+    }
+
+    req.user = user;
+    next();
+  } catch (error) {
+    throw new ApiError(401, error?.message || "Invalid Access token");
+  }
+});
+
+```
+
+now this middleware takes the tokens from the cookies and because cookies is available to the app as app.use(cookieparser()) so it can be accessed in the request body we took the tokens and verified it and then getting the user by findbyid which is there inside the verified token and passing it to the next 
+
+#### understanding of subscriber schema 
+so as we know that it consist of two object subscriber and channel as both of them are users so they have the save data model reference of user
+
+``` js
+
+import mongoose, {Schema} from "mongoose";
+
+const subscriptionSchema = new Schema({
+    subscriber: {
+        type: Schema.Types.ObjectId, //the one who is Subscribing
+        ref: "User"
+    },
+    channel: {
+        type: Schema.Types.ObjectId, //the one who is subscribed
+        ref: "User"
+    }
+},{ timestamps: true })
+  
+export const Subscription = mongoose.model("Subscription", subscriptionSchema)
+```
+// as we know that to store the number subscriber and every subscription that a user have we have to build a  different logic cause we cannot store the numbers in an array as it is not scalable as we scale the database for millions of users even if we want to change the data of the array it is very difficult to handle so for that we use creation of document in Mongodb as seen in the image 
+![[Pasted image 20240917094047.png]]
+as we can see in the image that whenever there is a user who wants to subscribe we make a object of it and store as channel-> channel name that the person has followed and 
+				subs-> the person who has followed 
+know when we want to get the data of the we can just query the objects such as we want the subscriber count just count all the objects which have the channel name which we want to query and to get the how many channel a user has subscribed just all the objects in which the user is present will give us the count of all needed data
+
+#### [[MongoDB Aggregation pipeline]] 
+// advance topics in Mongodb
+-> aggregate pipeline returns the data in an array 
+
+##### Why we fetch user profile from params?
+User profiles are loaded from parameters ==to provide a personalized experience for users==. When a user logs on to a computer for the first time, the system creates a user profile. Subsequent logons load the user's profile, which contains information that helps configure the user's environment. 
+
+User profiles can include basic information like a user's name, username, email address, and password. They can also include more personal details like age, gender, location, and contact information. 
+
+User profiles can help platforms offer targeted content and accurate recommendations based on a user's preferences and history.
+
+##### To safely check check for the values 
+**`channel?.length`**: This uses **optional chaining (`?.`)** to safely access the `length` property of `channel`. If `channel` is `null` or `undefined`, instead of throwing an error, the result will be `undefined`.
+
+##### Immutability in javascript
+https://www.freecodecamp.org/news/immutability-in-javascript-with-examples/
+
+``` js 
+req.user._id;
+// when we type the above statement we do not get the whole id we just get the string that is inside the object 
+// output 
+66e72ca9c6f6d31632b7a095
+
+// for the whole object id we have to pass it through the mongoose then mongoose will handle it behind the scenes 
+```
+
+#### Typescript
+[[Typescript]] - learning typescript 
+
+#### Why does JavaScript's fetch make me wait TWICE?
+https://www.youtube.com/watch?v=Ki64Cnyf_cA&ab_channel=TomontheInternet
+
+
+
+
+
+

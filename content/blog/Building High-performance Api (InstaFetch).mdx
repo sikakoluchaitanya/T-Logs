@@ -1,0 +1,67 @@
+---
+title: notes fot building high-performamce api 
+description: detailed docs for the platform
+date: 2024-12-23
+published: true
+---
+
+-> Average of 10 searches 
+if we are using Sqlite it is 33% slower than redis 
+and postgres is 20% slower then redis
+and sqlite is again 16% slower than postgres 
+
+conventional Architecture for deployment 
+![[Pasted image 20241004101549.png]]
+
+Performance Api
+![[Pasted image 20241004101636.png]]
+in this architecture we have multiple replicas of the database so that it reduces the latency and reduce the search time 
+CF are cloudflare workers 
+
+#### Honojs 
+
+using for routing in this projects as it is better than next router methods
+
+``` ts
+const app = new Hono().basePath('/api')
+// this is the base path so we need to call only path ahead of /api 
+```
+
+// basic setup for hono
+``` ts
+import { Hono } from "hono";
+import { handle } from "hono/vercel";  
+
+export const runtime = "edge"; // this will compatible with vercel as well as cloudflare workers as vercel use edge runtime by default and cloudflare don't
+
+const app = new Hono().basePath("/api"); // this is the basepath so we do not have to make the request from the root path always
+
+app.get("/search", async (c) => {
+    return c.json({})
+})
+
+export const GET = handle(app) // this is the export for vercel if we want to deploy the app to vercel
+
+export default app as never // this is the export for cloudflare if we want to deploy the app to cloudflare
+// never is for typescript compiler
+```
+
+#### Way of storing data in redis to get faster search
+![[Pasted image 20241004223234.png]]
+``` ts 
+countryList.forEach((country) => {
+  const term = country.toUpperCase();
+  const terms: { score: 0; member: string }[] = [];
+
+  for (let i = 0; i < term.length; i++) {
+    terms.push({ score: 0, member: term.substring(0, i) });
+  }
+  terms.push({ score: 0, member: term + "*" });
+
+  const populateDb = async () => {
+    await redis.zadd("terms", ...terms);
+  };
+  populateDb();
+});
+
+```

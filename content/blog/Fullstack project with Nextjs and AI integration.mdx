@@ -1,0 +1,307 @@
+---
+title: notes for fullstack project
+description: detailed docs for the platform
+date: 2024-12-23
+published: true
+---
+
+ada**this is an article of why people are using Zod and Prisma with NextJS**
+[why people are using zod and prisma with nextjs](https://medium.com/@polite_feldgrau_woodchuck_70/why-is-everyone-using-prisma-zod-and-trpc-in-next-js-bfac913efcc8#:~:text=Zod%3A%20Can%20be%20used%20anywhere,your%20application%2C%20handling%20database%20interactions.)
+
+**which one of these i should use Zod, Prisma or mongoose??**
+
+Each of these libraries serves a different purpose, so it depends on what you need for your project:
+
+1. **Zod**: A TypeScript-first schema validation library. It helps validate and parse user input or any data, making sure your app works with well-structured data. If you need robust input validation for forms or APIs, Zod is great for type safety and validation.
+    
+2. **Prisma**: An ORM (Object-Relational Mapping) tool for working with databases (PostgreSQL, MySQL, SQLite, etc.) in a type-safe way. It simplifies database access and management, and integrates smoothly with TypeScript. Use Prisma if you want to interact with a database and prefer a modern, type-safe approach.
+    
+3. **Mongoose**: A MongoDB ODM (Object-Document Mapper) that helps you interact with MongoDB databases in a structured way. It allows you to define schemas for your documents and provides validation, query building, and middleware. Use Mongoose if you're using MongoDB as your database.
+    
+
+**Summary:**
+
+- Use **Zod** for schema validation.
+- Use **Prisma** for working with relational databases.
+- Use **Mongoose** for MongoDB.
+
+
+**As we are making this project in typescript so we need to look for type safety a lot**
+``` ts 
+export interface Message extends Document { // this is a defined type of schema which says that the schema should of this type and if anything else typescript will throw an error 
+    content: string;
+    createdAt: string;
+} 
+// in this similar way we can define type of multiple schema 
+
+const messageSchema: Schema<Message> = new Schema({ // this is the Schema defination where we have defined the schema type as message
+  content: {
+    type: String,
+    required: true,
+  },
+  createdAt: {
+    type: Date,
+    required: true,
+    default: Date.now,
+  },
+});
+
+const UserModel = (mongoose.models.User as mongoose.Model<User>) || mongoose.model<User>('User', UserSchema); 
+
+// these above logic is because as nextjs runs on edge runtime so server is not aware whether it is been run for first time or it has been started before so we check 
+// and also model is a type of Users all these typesafety is because of typescript 
+
+export default UserModel
+
+
+```
+
+**when mongoose itself provides schema validation then why use zod??**
+``` 
+Mongoose does provide schema validation, but there are a few reasons why you might want to use Zod alongside or instead of Mongoose's built-in validation:
+
+### 1. **Flexibility and Scope**
+
+- **Mongoose's validation** is tied to MongoDB models and schemas, meaning it only validates data that is directly associated with the database.
+- **Zod** is a general-purpose schema validation tool. You can use it to validate any kind of data — including request bodies, query parameters, or data that may never get stored in a database.
+
+### 2. **TypeScript Integration**
+
+- **Mongoose** has limited TypeScript support. While it can generate types based on schemas, it's not as tightly integrated with TypeScript as Zod.
+- **Zod** is TypeScript-first. It provides excellent type safety, automatically generating TypeScript types from schemas, which can improve your code's maintainability and reduce type-related bugs.
+
+### 3. **Input Validation (before hitting the database)**
+
+- **Mongoose validation** occurs when you attempt to save data to the database.
+- **Zod** allows you to validate incoming data (like form inputs or API request payloads) before it even reaches the database layer. This is useful for early error detection and better separation of concerns.
+
+### 4. **Better Error Handling**
+
+- **Zod** gives you more fine-grained control over error messages and handling compared to Mongoose’s built-in validation. You can easily create custom error messages and handle different types of validation logic.
+
+### 5. **Reusable Schemas**
+
+- **Zod schemas** can be reused across different parts of your application, including frontend validation, backend API validation, and database interaction.
+- **Mongoose schemas** are limited to MongoDB-related operations.
+
+### Example Workflow
+
+- Use **Zod** for validating incoming request data (e.g., from an API endpoint).
+- After passing Zod validation, you can send the validated data to your **Mongoose** model to be stored in MongoDB.
+
+**In summary**: While Mongoose is good for database-level validation, Zod is more flexible and powerful for application-wide data validation, especially if you’re working with TypeScript or need to validate data beyond just what’s going into the database.
+```
+
+#### Schema validation using Zod 
+--> this is the most simple lib to work with and validate any data before pushing it to the database 
+``` ts 
+import { z } from "zod";
+
+export const usernameValidation = z
+  .string()
+  .min(8, { message: "Username must be at least 3 characters long." })
+  .max(20, { message: "Username must be less than 20 characters long." })
+  .regex(/^[a-zA-Z0-9]+$/, {
+    message: "Username must only contain letters and numbers.",
+  });
+
+export const signUpSchema = z.object({
+  username: usernameValidation,
+  email: z.string().email({ message: "Please enter a valid email address." }),
+  password: z
+    .string()
+    .min(8, { message: "Password must be at least 8 characters long." }),
+});
+
+```
+
+**Nextjs is an edge time framework and it do not run all time it run on demand  so there should always a check before whether there is already  db connection or not and if there is a connection then do not reestablish the connection which can cause and error **
+
+#### DB Connection in Nextjs
+``` ts 
+import mongoose from "mongoose";
+
+type ConnectionObject = {
+  isConnected?: number; // optioal check may or maynot come here
+}; // this function is important to check before making connection to prevent the server form choking from multiple connection to db 
+
+const connection: ConnectionObject = {};
+
+async function dbConnect(): Promise<void> { // here void means that the function is not worried about the return type 
+  if (connection.isConnected) { // checking for previous connections 
+    console.log("Already connected");
+    return;
+  }
+
+  try {
+    const db = await mongoose.connect(process.env.MONGODB_URI || "", {});
+
+    connection.isConnected = db.connections[0].readyState; // this readystate returns the number of connection to the connection object 
+    console.log("Connected to MongoDB");
+  } catch (error) {
+    console.log("Error connecting to MongoDB: ", error);
+    process.exit(1);
+  }
+}
+
+export default dbConnect;
+
+```
+
+#### API Folder 
+In Next.js, the `api` folder is used to create **API routes** that allow you to build server-side logic directly within your Next.js application. It essentially allows you to create backend endpoints without the need for a separate backend server.
+
+### Purpose of the `api` Folder
+
+The `api` folder is where you define **API routes** that handle requests (e.g., `GET`, `POST`, `PUT`, `DELETE`) and execute server-side logic. These API routes are useful for things like:
+
+- Fetching data from a database.
+- Handling form submissions.
+- Authenticating users.
+- Performing CRUD operations.
+- Communicating with external APIs.
+### How It Works
+
+- You place your API route files inside the `pages/api/` directory.
+- Each file in the `api` folder automatically becomes an API endpoint, with the file path representing the URL route.
+
+For example:
+
+- A file at `pages/api/hello.js` creates an endpoint at `/api/hello`.
+- A file at `pages/api/user/[id].js` creates a dynamic route at `/api/user/[id]`.
+
+### Example of a Simple API Route
+
+Here is an example of an API route that responds to a `GET` request:
+####### `pages/api/hello.js`
+``` js
+export default function handler(req, res) {
+  res.status(200).json({ message: 'Hello, world!' });
+}
+```
+
+When you visit `/api/hello`, the server will respond with:
+``` json
+{
+  "message": "Hello, world!"
+}
+```
+
+### Request and Response Objects
+
+Each API route has access to the `req` (request) and `res` (response) objects, similar to Express.js or Node.js. This allows you to handle requests, parse body data, set headers, and send responses.
+
+### Example with Request Methods
+``` js
+export default function handler(req, res) {
+  if (req.method === 'GET') {
+    // Handle GET request
+    res.status(200).json({ message: 'This is a GET request' });
+  } else if (req.method === 'POST') {
+    // Handle POST request
+    const data = req.body;
+    res.status(201).json({ message: 'Data received', data });
+  } else {
+    // Handle other HTTP methods
+    res.setHeader('Allow', ['GET', 'POST']);
+    res.status(405).end(`Method ${req.method} Not Allowed`);
+  }
+}
+
+```
+### Key Features of API Routes
+
+- **Serverless**: Next.js API routes run on serverless functions (e.g., Vercel Functions, AWS Lambda).
+- **Environment Variables**: You can access environment variables (`process.env`) securely on the server side.
+- **SSR + API**: Since it's server-side code, you can connect to databases, handle authentication, and perform complex operations.
+
+### Folder Structure
+The `api` folder resides under the `pages/` directory and can include subfolders:
+``` bash
+pages/
+  └── api/
+       ├── hello.js
+       ├── user/
+       │    └── [id].js
+       └── auth.js
+
+```
+This allows you to create RESTful-style endpoints (e.g., `/api/user/[id]`, `/api/auth`).
+
+### Conclusion
+
+The `api` folder in Next.js simplifies the creation of backend logic directly within your application, making it easy to define server-side code without needing a separate backend server. It’s particularly useful for small- to medium-sized projects where you want both frontend and backend logic in one place.
+
+
+#### Next-auth.js(new version auth.js)
+
+**why do we need next-auth.d.ts**
+The `next-auth.d.ts` file is used to extend or augment TypeScript types for the NextAuth library when you're working in a Next.js project that uses TypeScript and NextAuth for authentication. Here's why you might need it:
+
+1. **Type Augmentation**: By default, NextAuth comes with built-in types, but you may need to extend or customize these types to better fit your application. For example, if you're adding custom fields to the `Session` object or user model, you would define these in `next-auth.d.ts` so TypeScript can recognize and validate them.
+    
+2. **Custom User Fields**: If you're using a custom user database model and storing additional information about users (e.g., roles, permissions, profile data), you can add those fields to the `User` and `Session` types to ensure they're correctly typed in your app.
+    
+3. **Type Safety**: This file helps provide stronger type safety for your authentication-related logic, such as middleware, API routes, or front-end components. It ensures that TypeScript knows the exact shape of authentication data (session, user, etc.), which minimizes errors in your codebase.
+    
+4. **Easier Integration**: It makes it easier to integrate custom authentication logic with your TypeScript project, providing a more seamless development experience.
+    
+
+Here's a basic example of what `next-auth.d.ts` might look like:
+``` ts 
+// next-auth.d.ts
+import NextAuth from "next-auth";
+
+// Extend default session and user types
+declare module "next-auth" {
+  interface Session {
+    user: {
+      id: string;
+      role: string;
+      // other custom fields...
+    };
+  }
+
+  interface User {
+    id: string;
+    role: string;
+    // other custom fields...
+  }
+}
+
+// there is another way of doing it 
+declare module 'next-auth/jwt' {
+    interface JWT {
+        _id?: string;
+        isVerified?: boolean;
+        isAcceptingMessages?: boolean;
+        username?: string;
+    }
+}
+```
+This tells TypeScript that `Session.user` will have both `id` and `role` properties, ensuring type safety across your app.
+
+#### File structure in nextjs
+``` bash
+my-nextjs-app/
+├── node_modules/
+├── public/
+│   ├── favicon.ico
+│   └── images/
+├── src/app
+│   ├── components/
+│   ├── pages/
+│   ├── styles/
+│   ├── api/
+│   └── lib/
+|   middleware
+|   models
+|   helpers
+├── .next/
+├── package.json
+├── next.config.js
+└── tsconfig.json (if using TypeScript)
+
+```
+
+middleware is inside the src but not inside the app 
