@@ -30,6 +30,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "concurrently": "^9.1.0",
+    "daisyui": "^4.12.22",
     "eslint": "^9",
     "eslint-config-next": "15.1.0",
     "postcss": "^8",

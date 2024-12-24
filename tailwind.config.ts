@@ -1,5 +1,5 @@
 import type { Config } from "tailwindcss";
-import { fontFamily } from "tailwindcss/defaultTheme";
+import theme, { fontFamily } from "tailwindcss/defaultTheme";
 
 export default {
     darkMode: ["class"],
@@ -15,6 +15,7 @@ export default {
 			mono: ["var(--font-geist-mono)", ...fontFamily.mono],
 		},
   		colors: {
+			'business': 'rgb(32, 32, 32)',
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
   			card: {
@@ -63,5 +64,20 @@ export default {
   		}
   	}
   },
-  plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],
+
+  plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography"), require("daisyui")],	
+  daisyui: {
+	themes: [
+		"dark",
+		"cupcake",
+		"synthwave",
+		"retro",
+		"luxury",
+		"dracula",
+		"autumn",
+		"business",
+		"lemonade",
+		"winter",
+	]
+  },
 } satisfies Config;

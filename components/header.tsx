@@ -7,78 +7,42 @@ import { MainNav } from "./main-nav";
 import { SmallNav } from "./Small-nav";
 import { ModeToggle } from "./mode-toggle";
 
-    export function Header() {
-        return (
-            <header className="sticky top-0 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-                <div className="container flex h-14 max-w-screen-2xl items-center justify-between">
-                    {/* Main navigation */}
-                    <MainNav />
-    
-                    {/* Right-side icons and actions */}
-                    <div className=" flex items-center space-x-2">
-                        {/* GitHub Link */}
-                        <Link
-                            rel="noreferrer"
-                            href={siteConfig.links.github}
-                            target="_blank"
-                        >
+export function Header() {
+    const socialLinks = [
+        { href: siteConfig.links.github, icon: Icons.github, label: "GitHub" },
+        { href: siteConfig.links.twitter, icon: Icons.twitter, label: "Twitter" },
+        { href: siteConfig.links.linkedin, icon: Icons.linkedin, label: "LinkedIn" },
+    ];
+
+    return (
+        <header className="sticky top-0 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
+            <div className="container mx-auto flex h-14 max-w-screen-2xl items-center justify-between px-4 md:px-8">
+                {/* Main navigation */}
+                <MainNav />
+
+                {/* Right-side icons and actions */}
+                <div className="flex items-center space-x-2">
+                    {socialLinks.map(({ href, icon: Icon, label }) => (
+                        <Link key={label} rel="noreferrer" href={href} target="_blank">
                             <div
                                 className={cn(
-                                    buttonVariants({
-                                        variant: "ghost",
-                                    }),
+                                    buttonVariants({ variant: "ghost" }),
                                     "w-9 px-0 hidden sm:inline-flex"
                                 )}
                             >
-                                <Icons.github className="h-5 w-5" />
-                                <span className="sr-only">GitHub</span>
+                                <Icon className="h-5 w-5" />
+                                <span className="sr-only">{label}</span>
                             </div>
                         </Link>
-    
-                        {/* Twitter Link */}
-                        <Link
-                            rel="noreferrer"
-                            href={siteConfig.links.twitter}
-                            target="_blank"
-                        >
-                            <div
-                                className={cn(
-                                    buttonVariants({
-                                        variant: "ghost",
-                                    }),
-                                    "w-9 px-0 hidden sm:inline-flex"
-                                )}
-                            >
-                                <Icons.twitter className="h-5 w-5" />
-                                <span className="sr-only">Twitter</span>
-                            </div>
-                        </Link>
-    
-                        {/* LinkedIn Link */}
-                        <Link
-                            rel="noreferrer"
-                            href={siteConfig.links.linkedin}
-                            target="_blank"
-                        >
-                            <div
-                                className={cn(
-                                    buttonVariants({
-                                        variant: "ghost",
-                                    }),
-                                    "w-9 px-0 hidden sm:inline-flex"
-                                )}
-                            >
-                                <Icons.linkedin className="h-5 w-5" />
-                                <span className="sr-only">LinkedIn</span>
-                            </div>
-                        </Link>
-    
-                        {/* Dark Mode Toggle */}
-                        <ModeToggle />
-    
-                        {/* Small Navigation */}
-                        <SmallNav />
-                    </div>
+                    ))}
+
+                    {/* Dark Mode Toggle */}
+                    <ModeToggle />
+
+                    {/* Small Navigation */}
+                    <SmallNav />
                 </div>
-            </header>
-    );}
+            </div>
+        </header>
+    );
+}
