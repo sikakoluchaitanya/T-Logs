@@ -8,6 +8,7 @@ import { Posts_item } from "@/components/posts";
 import { ArrowRight } from 'lucide-react';
 import { Icons } from '@/components/icons';
 import AnimatedHeading from '@/components/AnimatedHeading';
+import TypewriterText from '@/components/typinganimation';
 
 export default function Home() {
   const latestPosts = sortPosts(posts).slice(0, 3);
@@ -21,16 +22,20 @@ export default function Home() {
         
         <div className="container mx-auto flex flex-col items-center gap-8 px-4">
           {/* Hero Section */}
-          <div className="space-y-4 text-center">
+          <div className="text-center">
             <AnimatedHeading />
-            <p className="max-w-[42rem] mx-auto text-muted-foreground sm:text-xl text-balance leading-relaxed">
-              Welcome to my personal blog—a digital journal where I document my exploration of technology 
-              and share valuable insights from my journey as a developer.
-            </p>
-            <p className="max-w-[42rem] mx-auto text-muted-foreground sm:text-xl text-balance leading-relaxed">
-              Crafted with cutting-edge tools like Next.js, Velite, Rehype, ShadCN, and TailwindCSS, 
-              this blog is a reflection of my passion for innovation and learning.
-            </p>
+            <div className="max-w-[42rem] mx-auto text-muted-foreground sm:text-xl text-balance leading-relaxed">
+                <TypewriterText 
+                  text="Welcome to my blog, where I share my journey as a developer and insights on technology."
+                  initialDelay={0}
+                />
+              </div>
+              <div className="max-w-[42rem] mx-auto text-muted-foreground sm:text-xl text-balance leading-relaxed">
+                <TypewriterText 
+                  text="Built with tools like Next.js, Velite, and TailwindCSS, it reflects my passion for innovation."
+                  initialDelay={5300}
+                />
+              </div>
           </div>
 
           {/* Call to Action Buttons */}

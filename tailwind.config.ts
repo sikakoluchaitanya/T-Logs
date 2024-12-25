@@ -10,6 +10,15 @@ export default {
   ],
   theme: {
   	extend: {
+		animation: {
+			cursor: 'cursor .8s ease-in-out infinite',
+		  },
+		  keyframes: {
+			cursor: {
+			  '0%, 100%': { opacity: '1' },
+			  '50%': { opacity: '0' },
+			},
+		  },
 		fontFamily: {
 			sans: ["var(--font-geist-sans)", ...fontFamily.sans],
 			mono: ["var(--font-geist-mono)", ...fontFamily.mono],
