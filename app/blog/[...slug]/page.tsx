@@ -17,15 +17,13 @@ async function getPostFromParams(params: PostsPageProps["params"]) {
     }
     const slug = decodeURIComponent(params.slug.join("/"));
     const post = posts.find((post) => post.slugAsParams === slug);
-    return post;    
+    return post || null;    
 }
 
 export const revalidate = 60; // Rebuilds the page every 60 seconds
 
-export async function generateMetadata({
-    params
-}: PostsPageProps): Promise<Metadata> {
-    const post = await getPostFromParams(params); // ✅ Pass params directly
+export async function generateMetadata({ params }: PostsPageProps): Promise<Metadata> {
+    const post = await getPostFromParams(params); 
 
     if (!post) {
         return {};
@@ -67,11 +65,11 @@ export async function generateStaticParams(): Promise<PostsPageProps["params"][]
     }));
 }
 
-export default async function PostsPage({ params }: { params: PostsPageProps["params"] }) {
-    const post = await getPostFromParams(params); // ✅ Pass params directly
+export default async function PostsPage({ params }: PostsPageProps) {
+    const post = await getPostFromParams(params); 
 
     if (!post || !post.published) {
-        notFound();
+        return notFound();
     }
 
     return (
