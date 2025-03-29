@@ -67,7 +67,7 @@ export function ModeToggle() {
       textDark: "text-gray-100"
     }
   ];
-
+  
   if (!isMounted) return null;
 
   const currentTheme = themes.find(t => t.name === theme) || themes[0];
