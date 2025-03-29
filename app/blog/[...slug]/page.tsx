@@ -11,8 +11,7 @@ interface PostsPageProps {
     };
 }
 
-async function getPostFromParams(paramsPromise: Promise<PostsPageProps["params"]>) {
-    const params = await paramsPromise;
+async function getPostFromParams(params: PostsPageProps["params"]) {
     if (!params?.slug) {
         throw new Error("Params or slug is missing");
     }
@@ -26,12 +25,15 @@ export const revalidate = 60; // Rebuilds the page every 60 seconds
 export async function generateMetadata({
     params
 }: PostsPageProps): Promise<Metadata> {
-    const post = await getPostFromParams(Promise.resolve(params));
+    const post = await getPostFromParams(params); // ✅ Pass params directly
+
     if (!post) {
-        return {}
+        return {};
     }
+
     const ogSearchParams = new URLSearchParams();
     ogSearchParams.set("title", post.title);
+
     return {
         title: post.title,
         description: post.description,
@@ -56,7 +58,7 @@ export async function generateMetadata({
             description: post.description,
             images: [`/api/OpenGraph?${ogSearchParams.toString()}`]
         }
-    }
+    };
 }
 
 export async function generateStaticParams(): Promise<PostsPageProps["params"][]> {
@@ -66,10 +68,10 @@ export async function generateStaticParams(): Promise<PostsPageProps["params"][]
 }
 
 export default async function PostsPage({ params }: { params: PostsPageProps["params"] }) {
-    const post = await getPostFromParams(Promise.resolve(params));
+    const post = await getPostFromParams(params); // ✅ Pass params directly
 
     if (!post || !post.published) {
-        notFound(); // Handle 404
+        notFound();
     }
 
     return (
