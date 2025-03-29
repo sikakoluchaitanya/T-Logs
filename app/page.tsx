@@ -1,14 +1,13 @@
 import React from 'react';
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { siteConfig } from "@/helper/site";
 import { cn, sortPosts } from "@/lib/utils";
 import Link from "next/link";
 import { posts } from "#site/content";
 import { Posts_item } from "@/components/posts";
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Github } from 'lucide-react';
 import { Icons } from '@/components/icons';
 import AnimatedHeading from '@/components/AnimatedHeading';
-import TypewriterText from '@/components/typinganimation';
 
 export default function Home() {
   const latestPosts = sortPosts(posts).slice(0, 3);
@@ -25,49 +24,46 @@ export default function Home() {
           <div className="text-center">
             <AnimatedHeading />
             <div className="max-w-[42rem] mx-auto text-muted-foreground sm:text-xl text-balance leading-relaxed">
-                <TypewriterText 
-                  text="Welcome to my blog, where I share my journey as a developer and insights on technology."
-                  initialDelay={0}
-                />
-              </div>
-              <div className="max-w-[42rem] mx-auto text-muted-foreground sm:text-xl text-balance leading-relaxed">
-                <TypewriterText 
-                  text="Built with tools like Next.js, Velite, and TailwindCSS, it reflects my passion for innovation."
-                  initialDelay={5300}
-                />
-              </div>
+              <p>
+                Welcome to my blog, where I share my journey as a developer and insights on technology
+              </p>
+            </div>
           </div>
 
           {/* Call to Action Buttons */}
           <div className="flex flex-col gap-4 justify-center sm:flex-row w-full sm:w-auto">
-            <Link 
-              href="/blog" 
-              className={cn(
-                buttonVariants({ size: "lg" }),
-                "w-full sm:w-fit group relative overflow-hidden transition-all hover:shadow-lg hover:scale-105",
-                "bg-primary hover:bg-primary/90"
-              )}
-            >
+          <Button 
+            asChild 
+            size="lg" 
+            className="w-full sm:w-fit group relative overflow-hidden transition-all hover:shadow-lg hover:scale-105"
+            variant="link"
+          >
+            <Link href="/blog">
               <span className="relative flex items-center gap-2">
                 Read my blog
                 <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
               </span>
             </Link>
-            <Link
+          </Button>
+
+          <Button 
+            asChild 
+            variant="outline" 
+            size="lg" 
+            className="w-full sm:w-fit group relative overflow-hidden transition-all hover:shadow-lg hover:scale-105"
+          >
+          <Link 
               href={siteConfig.links.github}
               target="_blank"
               rel="noreferrer"
-              className={cn(
-                buttonVariants({ variant: "outline", size: "lg" }),
-                "w-full sm:w-fit group relative overflow-hidden transition-all hover:shadow-lg hover:scale-105",
-                "hover:bg-secondary"
-              )}
             >
               <span className="relative flex items-center gap-2">
-                <Icons.github className="w-4 h-4" />
+                <Github className="w-4 h-4" />
                 Github
               </span>
             </Link>
+          </Button>
+
           </div>
         </div>
       </section>

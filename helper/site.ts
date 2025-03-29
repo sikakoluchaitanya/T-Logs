@@ -4,7 +4,7 @@ export const siteConfig = {
     name: "T-logs",
     description: "A blog powered by velite",
     url: "https://example.app",
-    author: "cipherglider",
+    author: "Chaitanya Sikakolu",
     links: {
         twitter: "https://twitter.com/cipherglider",
         github: "https://github.com/cipherglider",
