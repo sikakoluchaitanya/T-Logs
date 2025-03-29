@@ -18,8 +18,10 @@ async function getPostFromParams(paramsPromise: Promise<PostsPageProps["params"]
     }
     const slug = decodeURIComponent(params.slug.join("/"));
     const post = posts.find((post) => post.slugAsParams === slug);
-    return post;
+    return post;    
 }
+
+export const revalidate = 60; // Rebuilds the page every 60 seconds
 
 export async function generateMetadata({
     params

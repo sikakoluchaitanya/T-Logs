@@ -14,6 +14,11 @@ interface PaginationProps {
         page?: string
     }
 }
+export async function generateStaticParams() {
+    return [{ page: "1" }]; // Pre-build the first page statically
+}
+
+export const revalidate = 60; // Rebuilds the page every 60 second
 
 export default async function Blog({ searchParams }: PaginationProps) {
     const resolvedSearchParams = await searchParams; // Resolve the promise
