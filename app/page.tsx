@@ -1,12 +1,11 @@
 import React from 'react';
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button} from "@/components/ui/button";
 import { siteConfig } from "@/helper/site";
-import { cn, sortPosts } from "@/lib/utils";
+import { sortPosts } from "@/lib/utils";
 import Link from "next/link";
 import { posts } from "#site/content";
 import { Posts_item } from "@/components/posts";
 import { ArrowRight, Github } from 'lucide-react';
-import { Icons } from '@/components/icons';
 import AnimatedHeading from '@/components/AnimatedHeading';
 
 export default function Home() {

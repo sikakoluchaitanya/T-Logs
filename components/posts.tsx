@@ -36,7 +36,3 @@ export function Posts_item ({ slug, title, description, date }: Props) {
         </article>
     )
 }
-
-function items(arg0: { slug: any; title: any; description: any; date: any }, Props: any) {
-    throw new Error("Function not implemented.")
-}

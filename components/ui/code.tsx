@@ -1,17 +1,12 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-export interface CodeProps extends React.HTMLAttributes<HTMLElement> {}
-
-const Code = React.forwardRef<HTMLElement, CodeProps>(
+const Code = React.forwardRef<HTMLElement, React.HTMLAttributes<HTMLElement>>(
     ({ className, ...props }, ref) => {
         return (
             <code
                 ref={ref}
-                className={cn(
-                    "font-mono text-sm",
-                    className
-                )}
+                className={cn("font-mono text-sm", className)}
                 {...props}
             />
         );
@@ -20,3 +15,4 @@ const Code = React.forwardRef<HTMLElement, CodeProps>(
 Code.displayName = "Code";
 
 export { Code };
+

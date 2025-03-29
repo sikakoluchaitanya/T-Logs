@@ -6,9 +6,9 @@ export const siteConfig = {
     url: "https://example.app",
     author: "Chaitanya Sikakolu",
     links: {
-        twitter: "https://twitter.com/cipherglider",
-        github: "https://github.com/cipherglider",
-        linkedin: "https://www.linkedin.com/in/cipherglider/"
+        twitter: "https://x.com/Chaitany1904",
+        github: "https://github.com/sikakoluchaitanya",
+        linkedin: "https://www.linkedin.com/in/chaitanya-sikakolu/"
     }
 }
 

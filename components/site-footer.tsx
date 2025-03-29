@@ -7,31 +7,36 @@ export function SiteFooter() {
         <footer>
             <div className="mb-6 mt-14 flex flex-col items-center">
                 <div className="mb-3 flex space-x-4">
-                    <a target="_blank" rel="noreferer" href="mailto:hello@gmail.com">
-                        <span className="sr-only">Mail</span>
-                        <MailIcon className="w-6 h-6" />    
+                    <a href="mailto:chaitanya.dev04@gmail.com" rel="noopener noreferrer">
+                        <MailIcon className="w-6 h-6" />
                     </a>
-                    <a target="_blank" rel="noreferer" href={siteConfig.links.github}>
-                        <span className="sr-only">Github</span>
-                        <Icons.github className="w-6 h-6" />    
-                    </a>
-                    <a target="_blank" rel="noreferer" href={siteConfig.links.twitter}>
-                        <span className="sr-only">Twitter</span>
-                        <Icons.twitter className="w-6 h-6" />    
-                    </a>
-                    <a target="_blank" rel="noreferer" href={siteConfig.links.linkedin}>
-                        <span className="sr-only">LinkedIn</span>
-                        <Icons.linkedin className="w-6 h-6" />
-                    </a>
+                    {siteConfig.links.github && (
+                        <a target="_blank" rel="noopener noreferrer" href={siteConfig.links.github}>
+                            <Icons.github className="w-6 h-6" />    
+                        </a>
+                    )}
+                    {siteConfig.links.twitter && (
+                        <a target="_blank" rel="noopener noreferrer" href={siteConfig.links.twitter}>
+                            <Icons.twitter className="w-6 h-6" />    
+                        </a>
+                    )}
+                    {siteConfig.links.linkedin && (
+                        <a target="_blank" rel="noopener noreferrer" href={siteConfig.links.linkedin}>
+                            <Icons.linkedin className="w-6 h-6" />
+                        </a>
+                    )}
                 </div>
-                {/* <div className="mb-2 flex space-x-2 text-sm text-muted-foreground">
-                    <a href={siteConfig.links.}>Github</a>
 
-                    </a>
+                {/* Personal Website Link (Uncomment and Modify if Needed) */}
+                {/* <div className="mb-2 flex space-x-2 text-sm text-muted-foreground">
+                    <a href={siteConfig.links.personalWebsite}>Personal Website</a>
                 </div> */}
-                {/* // link for personal website */}
-                {siteConfig.author}
+
+                {/* Display author name safely */}
+                <p className="text-sm text-muted-foreground">
+                    {siteConfig.author || "Unknown Author"}
+                </p>
             </div>
         </footer>
-    )
+    );
 }
