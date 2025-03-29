@@ -55,6 +55,7 @@ export async function GET(req: NextRequest) {
       }
     );
   } catch (error) {
-    return new Response("Failed to generate image", { status: 500 });
+    console.error("Error generating Open Graph image:", error);
+    return new Response("Internal Server Error", { status: 500 });
   }
 }
